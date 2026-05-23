@@ -27,6 +27,7 @@ Likui Zhang<sup>1</sup>, Tao Tang<sup>1</sup>, Zhihao Zhan<sup>1</sup>, Xiuwei C
 Recent advances in Visual-Language-Action (VLA) models have shown promising potential for robotic manipulation tasks. However, real-world robotic tasks often involve long-horizon, multi-step problem-solving and require generalization for continual skill acquisition, extending beyond single actions or skills. These challenges present significant barriers for existing VLA models, which use monolithic action decoders trained on aggregated data, resulting in poor scalability. To address these challenges, we propose **AtomicVLA**, a unified planning-and-execution framework that jointly generates task-level plans, atomic skill abstractions, and fine-grained actions. AtomicVLA constructs a scalable atomic skill library through a **Skill-Guided Mixture-of-Experts (SG-MoE)**, where each expert specializes in mastering generic yet precise atomic skills. Furthermore, we introduce a flexible routing encoder that automatically assigns dedicated atomic experts to new skills, enabling continual learning. 
 
 ## 📢 News
+* [2026-05-22] We upload the [ckpt](https://huggingface.co/likui/AtomicVLA-libero) and update code for testing on LIBERO Benchmark.
 * [2026-03-10] We release our training code on LIBERO Benchmark.
 * [2026-02-22] Our AtomicVLA is accepted by CVPR 2026！
 

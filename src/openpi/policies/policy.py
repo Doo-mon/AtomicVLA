@@ -213,16 +213,12 @@ class ReasoningPolicy(BasePolicy):
 
         self.is_thinking = to_think
         if to_act:
-            print('Acting')
             actions = self._act(act_rng, processed_inputs,
                                 prefix_cache, prefix_mask, prefix_positions)
-            # self.is_thinking = True
         else:
-            print('Thinking...')
             suffix_tokens = self._reason(think_rng, last_logit, prefix_cache, prefix_mask,
                                         prefix_positions, temprature=self._temperature)
         model_time = time.monotonic() - start_time
-        # print(model_time)
         outputs = {
             "state": inputs.state,
             "actions": actions,
@@ -234,14 +230,11 @@ class ReasoningPolicy(BasePolicy):
         transformed = self._output_transform(outputs)
 
         if to_think:
-            print(transformed['thoughts'])
             self._update_thought(transformed['thoughts'], obs)
-            # self.infer(obs)
         transformed["policy_timing"] = {
             "infer_ms": model_time * 1000,
         }
         transformed = {"actions":transformed["actions"]}
-        # print(transformed)
         return transformed
     
     @property

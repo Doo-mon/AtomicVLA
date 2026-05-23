@@ -27,7 +27,7 @@ class Args:
     host: str = "0.0.0.0"
     port: int = 8000
     resize_size: int = 224
-    replan_steps: int = 5
+    replan_steps: int = 10
 
     #################################################################################################################
     # LIBERO environment-specific parameters
@@ -71,15 +71,12 @@ def eval_libero(args: Args) -> None:
     else:
         raise ValueError(f"Unknown task suite: {args.task_suite_name}")
 
-    BAD_ACTION_TEMPLATE = np.array([[0.078563,    0.0360005,   0.065438,   -0.00272493, -0.00059135, -0.01451939,
-  -0.0001995]] * 50 )
 
     client = _websocket_client_policy.WebsocketClientPolicy(args.host, args.port)
     # Start evaluation
     total_episodes, total_successes = 0, 0
     # summery = []
     for task_id in tqdm.tqdm(range(num_tasks_in_suite)):
-        task_id = 0
         task = task_suite.get_task(task_id)
 
         # Get default LIBERO initial states
@@ -110,7 +107,6 @@ def eval_libero(args: Args) -> None:
                 try:
                     # IMPORTANT: Do nothing for the first few timesteps because the simulator drops objects
                     # and we need to wait for them to fall
-                    start_time = time.monotonic()
                     if t < args.num_steps_wait:
                         obs, reward, done, info = env.step(LIBERO_DUMMY_ACTION)
                         t += 1
@@ -122,16 +118,12 @@ def eval_libero(args: Args) -> None:
                     img = np.ascontiguousarray(obs["agentview_image"][::-1, ::-1])
                     wrist_img = np.ascontiguousarray(obs["robot0_eye_in_hand_image"][::-1, ::-1])
                     replay_images.append(image_tools.convert_to_uint8(img))
-                    # print(image_tools.convert_to_uint8(img).shape)
                     img = image_tools.convert_to_uint8(
                         image_tools.resize_with_pad(img, args.resize_size, args.resize_size)
                     )
                     wrist_img = image_tools.convert_to_uint8(
                         image_tools.resize_with_pad(wrist_img, args.resize_size, args.resize_size)
                     )
-                    model_time = time.monotonic() - start_time
-                    print("imgae",model_time)
-                    time2 = time.monotonic()
 
                     # Save preprocessed image for replay video
                     
@@ -156,29 +148,23 @@ def eval_libero(args: Args) -> None:
 
                         # Query model to get action
                         action_chunk = client.infer(element)["actions"]
-                        while np.allclose(action_chunk, BAD_ACTION_TEMPLATE, atol=1e-6):
+                        while np.array_equal(action_chunk[0], action_chunk[1]):
                             action_chunk = client.infer(element)["actions"]
-                            print("action_chunk")
+                            # print("action_chunk")
                         assert (
                             len(action_chunk) >= args.replan_steps
                         ), f"We want to replan every {args.replan_steps} steps, but policy only predicts {len(action_chunk)} steps."
                         action_plan.extend(action_chunk[: args.replan_steps])
 
-                    model_time = time.monotonic() - time2
-                    print("infra",model_time)
                     action = action_plan.popleft()
 
                     # Execute action in environment
-                    time3 = time.monotonic()
                     obs, reward, done, info = env.step(action.tolist())
                     if done:
                         task_successes += 1
                         total_successes += 1
-                        # print(client.start())
                         break
                     t += 1
-                    model_time = time.monotonic() - time3
-                    print("reward",model_time)
 
                 except Exception as e:
                     logging.error(f"Caught exception: {e}")
